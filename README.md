@@ -42,10 +42,10 @@ If you want a simple `pip install` experience for JAX with GPU support, `light-t
 
 ## How do I install it?
 
-Installing `light-the-jax` is as easy as:
+Since `light-the-jax` is not yet published on PyPI, you can install it directly from GitHub:
 
 ```shell
-pip install light-the-jax
+pip install git+https://github.com/pmeier/light-the-jax.git
 ```
 
 Since it depends on `pip` and it might be upgraded during installation,
@@ -53,7 +53,13 @@ Since it depends on `pip` and it might be upgraded during installation,
 install it with:
 
 ```shell
-py -m pip install light-the-jax
+py -m pip install git+https://github.com/pmeier/light-the-jax.git
+```
+
+Once published to PyPI, installation will be as simple as:
+
+```shell
+pip install light-the-jax
 ```
 
 ## How do I use it?

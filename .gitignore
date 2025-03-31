@@ -1,3 +1,5 @@
+.github/
+
 light_the_torch/_version.py
 
 .doit.db*
