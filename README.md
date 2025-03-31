@@ -133,6 +133,20 @@ In fact, `ltj` is `pip` with a few added options:
   If `--jax-channel` is not passed, using `pip`'s builtin `--pre` option implies
   `--jax-channel=test`.
 
+- If you experience long delays with pip's dependency resolver examining multiple versions,
+  you can use the `--pin-versions` flag to automatically pin jax and jaxlib to specific
+  versions (defaults to 0.5.3):
+
+  ```shell
+  ltj install --pin-versions jax jaxlib
+  ```
+
+  You can also specify specific versions:
+
+  ```shell
+  ltj install --pin-versions --jax-version=0.5.3 --jaxlib-version=0.5.3 jax jaxlib
+  ```
+
 Of course, you are not limited to installing only JAX distributions. The tool also works
 when installing packages that depend on JAX:
 

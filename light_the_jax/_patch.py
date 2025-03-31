@@ -85,8 +85,31 @@ def patch(pip_main):
         if argv is None:
             argv = sys.argv[1:]
 
-        with apply_patches(argv):
-            return pip_main(argv)
+        # Make a copy of argv that we can modify
+        modified_argv = list(argv)
+        
+        # Only modify if this is an install command
+        if len(modified_argv) > 0 and modified_argv[0] == "install":
+            options = LttOptions.from_pip_argv(modified_argv)
+            
+            # If pinning is enabled, modify the package requests to include version constraints
+            if options.pin_versions:
+                # Create new argv with pinned versions
+                new_argv = []
+                for arg in modified_argv:
+                    # Replace standalone jax and jaxlib with versioned ones
+                    if arg == "jax":
+                        new_argv.append(f"jax=={options.jax_version}")
+                    elif arg == "jaxlib":
+                        new_argv.append(f"jaxlib=={options.jaxlib_version}")
+                    else:
+                        new_argv.append(arg)
+                
+                logger.info(f"Pinning jax to version {options.jax_version} and jaxlib to version {options.jaxlib_version}")
+                modified_argv = new_argv
+
+        with apply_patches(modified_argv):
+            return pip_main(modified_argv)
 
     return wrapper
 
@@ -110,6 +133,9 @@ class LttOptions:
         default_factory=lambda: {cb.CPUBackend()}
     )
     channel: Channel = Channel.STABLE
+    pin_versions: bool = False
+    jax_version: str = "0.5.3"
+    jaxlib_version: str = "0.5.3"
 
     @staticmethod
     def computation_backend_parser_options():
@@ -137,6 +163,24 @@ class LttOptions:
         ]
 
     @staticmethod
+    def version_pin_parser_options():
+        return [
+            optparse.Option(
+                "--pin-versions",
+                action="store_true",
+                help="Pin jax and jaxlib to specific versions to avoid dependency resolver delays",
+            ),
+            optparse.Option(
+                "--jax-version",
+                help="Specify the jax version to pin (default: 0.5.3)",
+            ),
+            optparse.Option(
+                "--jaxlib-version",
+                help="Specify the jaxlib version to pin (default: 0.5.3)",
+            ),
+        ]
+
+    @staticmethod
     def channel_parser_option() -> optparse.Option:
         return optparse.Option(
             "--jax-channel",
@@ -153,6 +197,8 @@ class LttOptions:
         parser = PassThroughOptionParser()
 
         for option in LttOptions.computation_backend_parser_options():
+            parser.add_option(option)
+        for option in LttOptions.version_pin_parser_options():
             parser.add_option(option)
         parser.add_option(LttOptions.channel_parser_option())
         parser.add_option("--pre", dest="pre", action="store_true")
@@ -188,8 +234,12 @@ class LttOptions:
             channel = Channel.TEST
         else:
             channel = Channel.STABLE
+            
+        pin_versions = opts.pin_versions
+        jax_version = opts.jax_version or "0.5.3"
+        jaxlib_version = opts.jaxlib_version or "0.5.3"
 
-        return cls(cbs, channel)
+        return cls(cbs, channel, pin_versions, jax_version, jaxlib_version)
 
 
 @contextlib.contextmanager
@@ -229,6 +279,8 @@ def patch_cli_version():
 def patch_cli_options():
     def postprocessing(input, output):
         for option in LttOptions.computation_backend_parser_options():
+            input.cmd_opts.add_option(option)
+        for option in LttOptions.version_pin_parser_options():
             input.cmd_opts.add_option(option)
 
     index_group = pip._internal.cli.cmdoptions.index_group
