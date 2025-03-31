@@ -58,8 +58,9 @@ include = [
 # https://github.com/pypa/setuptools_scm/#configuration-parameters
 
 write_to = "light_the_jax/_version.py"
+write_to_template = "__version__ = \"{version}\""
 version_scheme = "release-branch-semver"
-local_scheme = "node-and-timestamp"
+local_scheme = "node-and-date"
 
 [tool.black]
 # See link below for available options
