@@ -147,6 +147,10 @@ In fact, `ltj` is `pip` with a few added options:
   ltj install --pin-versions --jax-version=0.5.3 --jaxlib-version=0.5.3 jax jaxlib
   ```
 
+- For compatibility, `ltj` will automatically include required dependency versions
+  when needed. For example, when installing JAX 0.5.3+, it will ensure numpy >= 1.25
+  is installed as well.
+
 Of course, you are not limited to installing only JAX distributions. The tool also works
 when installing packages that depend on JAX:
 

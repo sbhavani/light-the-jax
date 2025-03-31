@@ -92,6 +92,20 @@ def patch(pip_main):
         if len(modified_argv) > 0 and modified_argv[0] == "install":
             options = LttOptions.from_pip_argv(modified_argv)
             
+            # Track if we need to handle jax/jaxlib
+            has_jax = False
+            has_jaxlib = False
+            has_numpy = False
+            
+            # Check if jax/jaxlib are being installed
+            for arg in modified_argv:
+                if arg == "jax" or arg.startswith("jax=="):
+                    has_jax = True
+                elif arg == "jaxlib" or arg.startswith("jaxlib=="):
+                    has_jaxlib = True
+                elif arg == "numpy" or arg.startswith("numpy=="):
+                    has_numpy = True
+            
             # If pinning is enabled, modify the package requests to include version constraints
             if options.pin_versions:
                 # Create new argv with pinned versions
@@ -107,6 +121,13 @@ def patch(pip_main):
                 
                 logger.info(f"Pinning jax to version {options.jax_version} and jaxlib to version {options.jaxlib_version}")
                 modified_argv = new_argv
+            
+            # If installing jax/jaxlib and not explicitly installing numpy,
+            # add numpy with a compatible version
+            if (has_jax or has_jaxlib) and not has_numpy:
+                # Add numpy with a version compatible with JAX
+                modified_argv.append("numpy>=1.25")
+                logger.info("Adding numpy>=1.25 to dependencies for JAX compatibility")
 
         with apply_patches(modified_argv):
             return pip_main(modified_argv)
