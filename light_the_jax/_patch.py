@@ -10,6 +10,7 @@ import sys
 import unittest.mock
 from typing import List, Set
 from unittest import mock
+import logging
 
 import pip._internal.cli.cmdoptions
 from pip._internal.index.collector import CollectedSources
@@ -22,6 +23,8 @@ import light_the_jax as ltj
 from . import _cb as cb
 from ._utils import apply_fn_patch
 
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class Channel(enum.Enum):
     STABLE = enum.auto()

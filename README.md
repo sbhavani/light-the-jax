@@ -102,7 +102,10 @@ ltj install jax jaxlib flax optax
 In fact, `ltj` is `pip` with a few added options:
 
 - By default, `ltj` uses the local NVIDIA driver version to select the correct binary
-  for you. You can pass the `--jax-computation-backend` option to manually specify
+  for you. If your CUDA version is newer than all supported JAX versions (e.g., CUDA 12.7),
+  it will automatically use the latest supported version (e.g., CUDA 12.3). 
+  
+  You can also pass the `--jax-computation-backend` option to manually specify
   the computation backend you want to use:
 
   ```shell

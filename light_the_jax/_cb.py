@@ -1,10 +1,14 @@
 import platform
 import re
 import subprocess
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Set
 
 from pip._vendor.packaging.version import InvalidVersion, Version
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 class ComputationBackend(ABC):
@@ -132,6 +136,55 @@ def _detect_compatible_cuda_backends() -> List[CUDABackend]:
     if not minimum_driver_versions:
         return []
 
+    # Get the supported CUDA versions from the dictionary
+    supported_cuda_versions = list(minimum_driver_versions.keys())
+    
+    # Check if we need to detect installed CUDA version via nvidia-smi
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=cuda_version",
+                "--format=csv,noheader",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        cuda_version_str = result.stdout.strip()
+        if cuda_version_str:
+            # Format is typically "12.7" for CUDA 12.7
+            parts = cuda_version_str.split('.')
+            if len(parts) == 2:
+                installed_cuda_major = int(parts[0])
+                installed_cuda_minor = int(parts[1])
+                
+                # Check if installed CUDA version is greater than all supported versions
+                is_newer = True
+                for cuda_version in supported_cuda_versions:
+                    cuda_major = cuda_version.major
+                    cuda_minor = cuda_version.minor
+                    
+                    if installed_cuda_major < cuda_major or (installed_cuda_major == cuda_major and installed_cuda_minor <= cuda_minor):
+                        is_newer = False
+                        break
+                
+                # If we have a newer CUDA version than all supported versions, use the latest supported version
+                if is_newer and supported_cuda_versions:
+                    # Sort versions to find the latest supported
+                    latest_supported = max(supported_cuda_versions)
+                    
+                    # Check if the driver is compatible with this version
+                    if driver_version >= minimum_driver_versions[latest_supported]:
+                        logger.info(f"Detected CUDA {installed_cuda_major}.{installed_cuda_minor} which is newer than all supported versions. "
+                              f"Using latest supported version: CUDA {latest_supported.major}.{latest_supported.minor}")
+                        # Return only the latest supported version
+                        return [CUDABackend(latest_supported.major, latest_supported.minor)]
+    except (subprocess.SubprocessError, ValueError, IndexError):
+        # If anything goes wrong with CUDA detection, fall back to driver version detection
+        pass
+
+    # Original logic - return all compatible backends based on driver version
     return [
         CUDABackend(cuda_version.major, cuda_version.minor)
         for cuda_version, minimum_driver_version in minimum_driver_versions.items()
