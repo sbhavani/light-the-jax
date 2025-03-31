@@ -17,7 +17,7 @@ from pip._internal.index.package_finder import CandidateEvaluator
 from pip._internal.index.sources import build_source
 from pip._internal.models.search_scope import SearchScope
 
-import light_the_torch as ltt
+import light_the_jax as ltj
 
 from . import _cb as cb
 from ._utils import apply_fn_patch
@@ -33,19 +33,22 @@ class Channel(enum.Enum):
         return cls[string.upper()]
 
 
-PYTORCH_DISTRIBUTIONS = {
-    "torch",
-    "torch-model-archiver",
-    "torch-tb-profiler",
-    "torcharrow",
-    "torchaudio",
-    "torchcsprng",
-    "torchdata",
-    "torchdistx",
-    "torchserve",
-    "torchtext",
-    "torchvision",
-    "pytorch-triton",
+JAX_DISTRIBUTIONS = {
+    "jax",
+    "jaxlib",
+    "flax",
+    "optax",
+    "orbax",
+    "chex",
+    "dm-haiku",
+    "diffrax",
+    "equinox",
+    "brax",
+    "jraph",
+    "maxtext",
+    "numpyro",
+    "pax",
+    "t5x",
 }
 
 THIRD_PARTY_PACKAGES = {
@@ -54,33 +57,22 @@ THIRD_PARTY_PACKAGES = {
     "Pillow",
     "certifi",
     "charset-normalizer",
-    "cmake",
     "colorama",
     "filelock",
     "fsspec",
     "idna",
-    "lit",
     "mpmath",
     "networkx",
     "numpy",
-    "nvidia-cublas-cu11",
-    "nvidia-cuda-cupti-cu11",
-    "nvidia-cuda-nvrtc-cu11",
-    "nvidia-cuda-runtime-cu11",
-    "nvidia-cudnn-cu11",
-    "nvidia-cufft-cu11",
-    "nvidia-curand-cu11",
-    "nvidia-cusolver-cu11",
-    "nvidia-cusparse-cu11",
-    "nvidia-nccl-cu11",
-    "nvidia-nvtx-cu11",
     "packaging",
-    "portalocker",
     "requests",
     "sympy",
     "tqdm",
     "typing-extensions",
     "urllib3",
+    "tensorflow",
+    "scipy",
+    "absl-py",
 }
 
 
@@ -120,9 +112,9 @@ class LttOptions:
     def computation_backend_parser_options():
         return [
             optparse.Option(
-                "--pytorch-computation-backend",
+                "--jax-computation-backend",
                 help=(
-                    "Computation backend for compiled PyTorch distributions, "
+                    "Computation backend for compiled JAX distributions, "
                     "e.g. 'cu118', 'cu121', or 'cpu'. "
                     "Multiple computation backends can be passed as a comma-separated "
                     "list, e.g 'cu118,cu121'. "
@@ -134,7 +126,7 @@ class LttOptions:
                 "--cpuonly",
                 action="store_true",
                 help=(
-                    "Shortcut for '--pytorch-computation-backend=cpu'. "
+                    "Shortcut for '--jax-computation-backend=cpu'. "
                     "If '--computation-backend' is used simultaneously, "
                     "it takes precedence over '--cpuonly'."
                 ),
@@ -144,9 +136,9 @@ class LttOptions:
     @staticmethod
     def channel_parser_option() -> optparse.Option:
         return optparse.Option(
-            "--pytorch-channel",
+            "--jax-channel",
             help=(
-                "Channel to download PyTorch distributions from, e.g. 'stable' , "
+                "Channel to download JAX distributions from, e.g. 'stable' , "
                 "'test', and 'nightly'. "
                 "If not specified, defaults to 'stable' unless '--pre' is given in "
                 "which case it defaults to 'test'."
@@ -172,23 +164,23 @@ class LttOptions:
 
         opts = cls._parse(argv)
 
-        if opts.pytorch_computation_backend is not None:
+        if opts.jax_computation_backend is not None:
             cbs = {
                 cb.ComputationBackend.from_str(string.strip())
-                for string in opts.pytorch_computation_backend.split(",")
+                for string in opts.jax_computation_backend.split(",")
             }
         elif opts.cpuonly:
             cbs = {cb.CPUBackend()}
-        elif "LTT_PYTORCH_COMPUTATION_BACKEND" in os.environ:
+        elif "LTJ_JAX_COMPUTATION_BACKEND" in os.environ:
             cbs = {
                 cb.ComputationBackend.from_str(string.strip())
-                for string in os.environ["LTT_PYTORCH_COMPUTATION_BACKEND"].split(",")
+                for string in os.environ["LTJ_JAX_COMPUTATION_BACKEND"].split(",")
             }
         else:
             cbs = cb.detect_compatible_computation_backends()
 
-        if opts.pytorch_channel is not None:
-            channel = Channel.from_str(opts.pytorch_channel)
+        if opts.jax_channel is not None:
+            channel = Channel.from_str(opts.jax_channel)
         elif opts.pre:
             channel = Channel.TEST
         else:
@@ -225,7 +217,7 @@ def patch_cli_version():
         "cli",
         "main_parser",
         "get_pip_version",
-        postprocessing=lambda input, output: f"ltt {ltt.__version__} from {ltt.__path__[0]}\n{output}",
+        postprocessing=lambda input, output: f"ltt {ltj.__version__} from {ltj.__path__[0]}\n{output}",
     ):
         yield
 
@@ -254,16 +246,29 @@ def patch_cli_options():
 
 
 def get_index_urls(computation_backends, channel):
-    if channel == Channel.STABLE:
-        channel_paths = [""]
-    else:
-        channel_paths = [f"{channel.name.lower()}/"]
-    return [
-        f"https://download.pytorch.org/whl/{channel_path}{backend}"
-        for channel_path, backend in itertools.product(
-            channel_paths, sorted(computation_backends)
-        )
-    ]
+    urls = []
+    
+    # Add base JAX releases URL
+    urls.append("https://storage.googleapis.com/jax-releases/jax_releases.html")
+    
+    # Get Python version for appropriate wheel selection
+    py_version = f"{sys.version_info.major}{sys.version_info.minor}"
+    
+    # Add JAX URLs for NVIDIA GPUs
+    for backend in sorted(computation_backends):
+        if isinstance(backend, cb.CUDABackend):
+            # JAX uses cuda version in the form cuda12 instead of cu12
+            cuda_version = f"cuda{backend.major}{backend.minor}"
+            
+            # Add appropriate wheel URLs for the current Python version
+            if channel == Channel.NIGHTLY:
+                # Add nightly URLs if needed
+                urls.append(f"https://storage.googleapis.com/jax-releases/nightly/{cuda_version}")
+            else:
+                # Add stable URLs
+                urls.append(f"https://storage.googleapis.com/jax-releases/{cuda_version}")
+    
+    return urls
 
 
 @contextlib.contextmanager
@@ -313,7 +318,7 @@ def patch_link_collection(computation_backends, channel, user_supplied_pinned_pa
     @contextlib.contextmanager
     def context(input):
         if not (
-            input.project_name in PYTORCH_DISTRIBUTIONS
+            input.project_name in JAX_DISTRIBUTIONS
             or (
                 input.project_name in THIRD_PARTY_PACKAGES
                 and input.project_name not in user_supplied_pinned_packages
@@ -326,13 +331,13 @@ def patch_link_collection(computation_backends, channel, user_supplied_pinned_pa
             yield
 
     def postprocessing(input, output):
-        if input.project_name not in PYTORCH_DISTRIBUTIONS:
+        if input.project_name not in JAX_DISTRIBUTIONS:
             return output
 
         if channel != Channel.STABLE:
             return output
 
-        # Some stable binaries are not hosted on the PyTorch indices. We check if this
+        # Some stable binaries are not hosted on the JAX indices. We check if this
         # is the case for the current distribution.
         for remote_file_source in output.index_urls:
             candidates = list(remote_file_source.page_candidates())
@@ -340,11 +345,11 @@ def patch_link_collection(computation_backends, channel, user_supplied_pinned_pa
             # Cache the candidates, so `pip` doesn't has to retrieve them again later.
             remote_file_source.page_candidates = lambda: iter(candidates)
 
-            # If there are any candidates on the PyTorch indices, we continue normally.
+            # If there are any candidates on the JAX indices, we continue normally.
             if candidates:
                 return output
 
-        # In case the distribution is not present on the PyTorch indices, we fall back
+        # In case the distribution is not present on the JAX indices, we fall back
         # to PyPI.
         _, pypi_file_source = build_source(
             SearchScope(
@@ -375,8 +380,13 @@ def patch_link_collection(computation_backends, channel, user_supplied_pinned_pa
 
 @contextlib.contextmanager
 def patch_candidate_selection(computation_backends):
+    # Update pattern to recognize both JAX patterns
     computation_backend_link_pattern = re.compile(
-        r"/(?P<computation_backend>(cpu|cu\d+|rocm([\d.]+)))/"
+        r"/(?P<computation_backend>(cpu|cu\d+|rocm([\d.]+)|cuda\d+))/"
+    )
+    # JAX specific pattern for extract from wheel filename
+    jax_cuda_pattern = re.compile(
+        r"jaxlib-[\d.]+\+(?P<computation_backend>cuda\d+)-"
     )
 
     def extract_local_specifier(candidate):
@@ -390,10 +400,31 @@ def patch_candidate_selection(computation_backends):
                 local = None
 
         if local is None:
+            # Check for JAX package with CUDA in filename
+            if candidate.name == "jaxlib":
+                jax_match = jax_cuda_pattern.search(candidate.link.filename)
+                if jax_match:
+                    cuda_str = jax_match["computation_backend"]
+                    # Convert cuda12 to cu12 format
+                    if cuda_str.startswith("cuda"):
+                        major_minor = cuda_str[4:]  # Extract "12" from "cuda12"
+                        if len(major_minor) == 2:
+                            major, minor = major_minor[0], major_minor[1]
+                            local = f"cu{major}{minor}"
+                            return local
+            
+            # Standard JAX pattern
             match = computation_backend_link_pattern.search(candidate.link.comes_from)
             local = match["computation_backend"] if match else "any"
+            
+            # Convert cuda12 to cu12 format if needed
+            if local and local.startswith("cuda"):
+                major_minor = local[4:]  # Extract "12" from "cuda12"
+                if len(major_minor) == 2:
+                    major, minor = major_minor[0], major_minor[1]
+                    local = f"cu{major}{minor}"
 
-        # Early PyTorch distributions used the "any" local specifier to indicate a
+        # Early JAX distributions used the "any" local specifier to indicate a
         # pure Python binary. This was changed to no local specifier later.
         # Setting this to "cpu" is technically not correct as it will exclude this
         # binary if a non-CPU backend is requested. Still, this is probably the
@@ -411,9 +442,9 @@ def patch_candidate_selection(computation_backends):
         candidates = iter(input.candidates)
         candidate = next(candidates)
 
-        if candidate.name not in PYTORCH_DISTRIBUTIONS:
+        if candidate.name not in JAX_DISTRIBUTIONS:
             # At this stage all candidates have the same name. Thus, if the first is
-            # not a PyTorch distribution, we don't need to check the rest and can
+            # not a JAX distribution, we don't need to check the rest and can
             # return without changes.
             return
 
@@ -430,7 +461,7 @@ def patch_candidate_selection(computation_backends):
         # mirror the exact key structure that the vanilla sort keys have.
         return (
             vanilla_sort_key(candidate_evaluator, candidate)
-            if candidate.name not in PYTORCH_DISTRIBUTIONS
+            if candidate.name not in JAX_DISTRIBUTIONS
             else (
                 cb.ComputationBackend.from_str(extract_local_specifier(candidate)),
                 candidate.version.base_version,

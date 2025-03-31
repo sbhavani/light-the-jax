@@ -7,11 +7,13 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "light_the_torch"
-description = "Install PyTorch distributions with computation backend auto-detection"
+name = "light_the_jax"
+description = "Install JAX distributions with computation backend auto-detection"
 readme = "README.md"
 keywords = [
-  "pytorch",
+  "jax",
+  "jaxlib",
+  "flax",
   "cuda",
   "pip",
   "install",
@@ -44,18 +46,18 @@ Tracker = "https://github.com/pmeier/light-the-torch/issues"
 Source = "https://github.com/pmeier/light-the-torch"
 
 [project.scripts]
-ltt = "light_the_torch._cli:main"
+ltj = "light_the_jax._cli:main"
 
 [tool.setuptools.packages.find]
 include = [
-    "light_the_torch",
+    "light_the_jax",
 ]
 
 [tool.setuptools_scm]
 # See link below for available options
 # https://github.com/pypa/setuptools_scm/#configuration-parameters
 
-write_to = "light_the_torch/_version.py"
+write_to = "light_the_jax/_version.py"
 version_scheme = "release-branch-semver"
 local_scheme = "node-and-timestamp"
 

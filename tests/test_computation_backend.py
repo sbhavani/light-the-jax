@@ -1,10 +1,21 @@
+import platform
 import subprocess
+from unittest import mock
 
-from types import SimpleNamespace
-
+import pip._vendor.packaging.version
 import pytest
 
-from light_the_torch import _cb as cb
+from light_the_jax._cb import (
+    CPUBackend,
+    ComputationBackend,
+    CUDABackend,
+    ROCmBackend,
+    _detect_compatible_cuda_backends,
+    _detect_nvidia_driver_version,
+    detect_compatible_computation_backends,
+)
+
+from types import SimpleNamespace
 
 try:
     subprocess.check_call(
@@ -23,7 +34,7 @@ skip_if_nvidia_driver_unavailable = pytest.mark.skipif(
 )
 
 
-class GenericComputationBackend(cb.ComputationBackend):
+class GenericComputationBackend(ComputationBackend):
     @property
     def local_specifier(self):
         return "generic"
@@ -51,8 +62,8 @@ class TestComputationBackend:
 
     def test_from_str_cpu(self):
         string = "cpu"
-        backend = cb.ComputationBackend.from_str(string)
-        assert isinstance(backend, cb.CPUBackend)
+        backend = ComputationBackend.from_str(string)
+        assert isinstance(backend, CPUBackend)
 
     @pytest.mark.parametrize(
         ("major", "minor", "string"),
@@ -67,8 +78,8 @@ class TestComputationBackend:
         ],
     )
     def test_from_str_cuda(self, major, minor, string):
-        backend = cb.ComputationBackend.from_str(string)
-        assert isinstance(backend, cb.CUDABackend)
+        backend = ComputationBackend.from_str(string)
+        assert isinstance(backend, CUDABackend)
         assert backend.major == major
         assert backend.minor == minor
 
@@ -83,8 +94,8 @@ class TestComputationBackend:
         ],
     )
     def test_from_str_rocm(self, major, minor, patch, string):
-        backend = cb.ComputationBackend.from_str(string)
-        assert isinstance(backend, cb.ROCmBackend)
+        backend = ComputationBackend.from_str(string)
+        assert isinstance(backend, ROCmBackend)
         assert backend.major == major
         assert backend.minor == minor
         assert backend.patch == patch
@@ -92,12 +103,12 @@ class TestComputationBackend:
     @pytest.mark.parametrize("string", (("unknown", "cudnn")))
     def test_from_str_unknown(self, string):
         with pytest.raises(ValueError, match=string):
-            cb.ComputationBackend.from_str(string)
+            ComputationBackend.from_str(string)
 
 
 class TestCPUBackend:
     def test_eq(self):
-        backend = cb.CPUBackend()
+        backend = CPUBackend()
         assert backend == "cpu"
 
 
@@ -105,7 +116,7 @@ class TestCUDABackend:
     def test_eq(self):
         major = 42
         minor = 21
-        backend = cb.CUDABackend(major, minor)
+        backend = CUDABackend(major, minor)
         assert backend == f"cu{major}{minor}"
 
 
@@ -114,7 +125,7 @@ class TestROCmBackend:
     def test_eq_with_patch(self, patch):
         major = 42
         minor = 21
-        backend = cb.ROCmBackend(major, minor, patch)
+        backend = ROCmBackend(major, minor, patch)
         assert (
             backend == f"rocm{major}.{minor}{f'.{patch}' if patch is not None else ''}"
         )
@@ -122,25 +133,25 @@ class TestROCmBackend:
 
 class TestOrdering:
     def test_cpu(self):
-        assert cb.CPUBackend() < cb.CUDABackend(0, 0)
+        assert CPUBackend() < CUDABackend(0, 0)
 
     def test_cuda(self):
-        assert cb.CUDABackend(0, 0) > cb.CPUBackend()
-        assert cb.CUDABackend(1, 2) < cb.CUDABackend(2, 1)
-        assert cb.CUDABackend(2, 1) < cb.CUDABackend(10, 0)
+        assert CUDABackend(0, 0) > CPUBackend()
+        assert CUDABackend(1, 2) < CUDABackend(2, 1)
+        assert CUDABackend(2, 1) < CUDABackend(10, 0)
 
     def test_rocm(self):
-        assert cb.ROCmBackend(0, 0, 0) > cb.CPUBackend()
+        assert ROCmBackend(0, 0, 0) > CPUBackend()
 
-        assert cb.ROCmBackend(1, 2, 3) < cb.ROCmBackend(3, 2, 1)
-        assert cb.ROCmBackend(3, 2, 1) < cb.ROCmBackend(10, 9, 8)
+        assert ROCmBackend(1, 2, 3) < ROCmBackend(3, 2, 1)
+        assert ROCmBackend(3, 2, 1) < ROCmBackend(10, 9, 8)
 
-        assert cb.ROCmBackend(1, 2) < cb.ROCmBackend(1, 2, 0)
-        assert cb.ROCmBackend(1, 2, 0) > cb.ROCmBackend(1, 2)
+        assert ROCmBackend(1, 2) < ROCmBackend(1, 2, 0)
+        assert ROCmBackend(1, 2, 0) > ROCmBackend(1, 2)
 
     def test_cuda_vs_rocm(self):
-        cuda_backend = cb.CUDABackend(1, 2)
-        rocm_backend = cb.ROCmBackend(1, 2)
+        cuda_backend = CUDABackend(1, 2)
+        rocm_backend = ROCmBackend(1, 2)
 
         with pytest.raises(TypeError):
             cuda_backend < rocm_backend
@@ -153,7 +164,7 @@ class TestOrdering:
 def patch_nvidia_driver_version(mocker):
     def factory(version):
         return mocker.patch(
-            "light_the_torch._cb.subprocess.run",
+            "_detect_nvidia_driver_version",
             return_value=SimpleNamespace(stdout=f"driver_version\n{version}"),
         )
 
@@ -162,10 +173,10 @@ def patch_nvidia_driver_version(mocker):
 
 def cuda_backends_params():
     params = []
-    for system, minimum_driver_versions in cb._MINIMUM_DRIVER_VERSIONS.items():
+    for system, minimum_driver_versions in _MINIMUM_DRIVER_VERSIONS.items():
         cuda_versions, driver_versions = zip(*sorted(minimum_driver_versions.items()))
         cuda_backends = tuple(
-            cb.CUDABackend(version.major, version.minor) for version in cuda_versions
+            CUDABackend(version.major, version.minor) for version in cuda_versions
         )
 
         # latest driver supports every backend
@@ -196,11 +207,11 @@ def cuda_backends_params():
 class TestDetectCompatibleComputationBackends:
     def test_no_nvidia_driver(self, mocker):
         mocker.patch(
-            "light_the_torch._cb.subprocess.run",
+            "_detect_nvidia_driver_version",
             side_effect=subprocess.CalledProcessError(1, ""),
         )
 
-        assert cb.detect_compatible_computation_backends() == {cb.CPUBackend()}
+        assert detect_compatible_computation_backends() == {CPUBackend()}
 
     @cuda_backends_params()
     def test_cuda_backends(
@@ -211,15 +222,15 @@ class TestDetectCompatibleComputationBackends:
         nvidia_driver_version,
         compatible_cuda_backends,
     ):
-        mocker.patch("light_the_torch._cb.platform.system", return_value=system)
+        mocker.patch("platform.system", return_value=system)
         patch_nvidia_driver_version(nvidia_driver_version)
 
-        backends = cb.detect_compatible_computation_backends()
-        assert backends == {cb.CPUBackend(), *compatible_cuda_backends}
+        backends = detect_compatible_computation_backends()
+        assert backends == {CPUBackend(), *compatible_cuda_backends}
 
     @skip_if_nvidia_driver_unavailable
     def test_cuda_backend(self):
         backend_types = {
-            type(backend) for backend in cb.detect_compatible_computation_backends()
+            type(backend) for backend in detect_compatible_computation_backends()
         }
-        assert cb.CUDABackend in backend_types
+        assert CUDABackend in backend_types

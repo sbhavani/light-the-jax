@@ -4,10 +4,16 @@ import os
 import pathlib
 import re
 import sys
+from typing import Any, Dict, List, Optional
+from unittest import mock
 
 import pytest
+import pip
+from packaging.utils import canonicalize_name
 
-PACKAGE_NAME = "light_the_torch"
+import light_the_jax as ltj
+
+PACKAGE_NAME = "light_the_jax"
 PROJECT_ROOT = (pathlib.Path(__file__).parent / "..").resolve()
 PACKAGE_ROOT = PROJECT_ROOT / PACKAGE_NAME
 

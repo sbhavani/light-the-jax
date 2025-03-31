@@ -3,12 +3,16 @@ import io
 import shlex
 import subprocess
 import sys
+import unittest
+from unittest import mock
 
-import light_the_torch as ltt
+import importlib_metadata
 import pytest
 
-from light_the_torch._cli import main
-from light_the_torch._patch import Channel
+import light_the_jax as ltj
+import light_the_jax._patch
+from light_the_jax._cli import main
+from light_the_jax._patch import Channel
 
 
 @pytest.mark.parametrize("cmd", ["ltt", "python -m light_the_torch"])
@@ -97,7 +101,7 @@ def test_help_smoke(set_argv, option):
 def test_version(set_argv, option):
     set_argv(option)
 
-    with exits(check_out=f"ltt {ltt.__version__} from {ltt.__path__[0]}"):
+    with exits(check_out=f"ltt {ltj.__version__} from {ltj.__path__[0]}"):
         main()
 
 
@@ -121,3 +125,14 @@ def test_pytorch_channel_values(set_argv):
 
     with exits(check_out=[f"'{channel.name.lower()}'" for channel in Channel]):
         main()
+
+
+def test_pip_main_called_without_interference_in_non_install_commands():
+    mock_pip_main = mock.MagicMock(return_value=0)
+    ltj_main = light_the_jax._patch.patch(mock_pip_main)
+
+    assert ltj_main(["help"]) == 0
+    mock_pip_main.assert_called_with(["help"])
+
+    assert ltj_main(["freeze"]) == 0
+    mock_pip_main.assert_called_with(["freeze"])

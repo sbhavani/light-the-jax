@@ -149,66 +149,22 @@ def _detect_nvidia_driver_version() -> Optional[Version]:
 
 _MINIMUM_DRIVER_VERSIONS = {
     "Linux": {
-        # Table 2 from
-        # https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
-        Version("12.6"): Version("525.60.13"),
-        Version("12.5"): Version("525.60.13"),
-        Version("12.4"): Version("525.60.13"),
-        Version("12.3"): Version("525.60.13"),
+        # JAX supports CUDA 12.x with newer drivers
+        Version("12.3"): Version("530.30.02"),
         Version("12.2"): Version("525.60.13"),
         Version("12.1"): Version("525.60.13"),
         Version("12.0"): Version("525.60.13"),
-        # Table 2 from
-        # https://docs.nvidia.com/cuda/archive/11.8.0/cuda-toolkit-release-notes/index.html
+        # JAX supports CUDA 11.8 with these drivers
         Version("11.8"): Version("450.80.02"),
-        Version("11.7"): Version("450.80.02"),
-        Version("11.6"): Version("450.80.02"),
-        Version("11.5"): Version("450.80.02"),
-        Version("11.4"): Version("450.80.02"),
-        Version("11.3"): Version("450.80.02"),
-        Version("11.2"): Version("450.80.02"),
-        Version("11.1"): Version("450.80.02"),
-        Version("11.0"): Version("450.36.06"),
-        # Table 1 from
-        # https://docs.nvidia.com/cuda/archive/10.2/cuda-toolkit-release-notes/index.html
-        Version("10.2"): Version("440.33"),
-        Version("10.1"): Version("418.39"),
-        Version("10.0"): Version("410.48"),
-        Version("9.2"): Version("396.26"),
-        Version("9.1"): Version("390.46"),
-        Version("9.0"): Version("384.81"),
-        Version("8.0"): Version("375.26"),
     },
     "Windows": {
-        # Table 2 from
-        # https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
-        Version("12.6"): Version("528.33"),
-        Version("12.5"): Version("528.33"),
-        Version("12.4"): Version("528.33"),
-        Version("12.3"): Version("528.33"),
+        # JAX supports CUDA 12.x with newer drivers
+        Version("12.3"): Version("531.18"),
         Version("12.2"): Version("528.33"),
         Version("12.1"): Version("528.33"),
         Version("12.0"): Version("528.33"),
-        # Table 2 from
-        # https://docs.nvidia.com/cuda/archive/11.8.0/cuda-toolkit-release-notes/index.html
+        # JAX supports CUDA 11.8 with these drivers
         Version("11.8"): Version("452.39"),
-        Version("11.7"): Version("452.39"),
-        Version("11.6"): Version("452.39"),
-        Version("11.5"): Version("452.39"),
-        Version("11.4"): Version("452.39"),
-        Version("11.3"): Version("452.39"),
-        Version("11.2"): Version("452.39"),
-        Version("11.1"): Version("452.39"),
-        Version("11.0"): Version("451.22"),
-        # Table 1 from
-        # https://docs.nvidia.com/cuda/archive/10.2/cuda-toolkit-release-notes/index.html
-        Version("10.2"): Version("441.22"),
-        Version("10.1"): Version("418.96"),
-        Version("10.0"): Version("411.31"),
-        Version("9.2"): Version("398.26"),
-        Version("9.1"): Version("391.29"),
-        Version("9.0"): Version("385.54"),
-        Version("8.0"): Version("376.51"),
     },
 }
 
