@@ -40,12 +40,36 @@ While this works, it has several downsides:
 
 If you want a simple `pip install` experience for JAX with GPU support, `light-the-jax` is for you.
 
+## Current Compatibility Matrix
+
+The table below shows the current CUDA version compatibility for JAX and related libraries that can be installed using `light-the-jax`:
+
+| JAX Version | CUDA Version | Compatible NVIDIA Driver | Compatible Libraries |
+|-------------|--------------|--------------------------|----------------------|
+| Latest      | CUDA 12.3    | >= 530.30.02 (Linux)     | jax, jaxlib, flax, optax, numpyro |
+|             |              | >= 531.18 (Windows)      |                      |
+| Latest      | CUDA 12.2    | >= 525.60.13 (Linux)     | jax, jaxlib, flax, optax, numpyro |
+|             |              | >= 528.33 (Windows)      |                      |
+| Latest      | CUDA 12.1    | >= 525.60.13 (Linux)     | jax, jaxlib, flax, optax, numpyro |
+|             |              | >= 528.33 (Windows)      |                      |
+| Latest      | CUDA 12.0    | >= 525.60.13 (Linux)     | jax, jaxlib, flax, optax, numpyro |
+|             |              | >= 528.33 (Windows)      |                      |
+| Latest      | CUDA 11.8    | >= 450.80.02 (Linux)     | jax, jaxlib, flax, optax, numpyro |
+|             |              | >= 452.39 (Windows)      |                      |
+| Latest      | CPU          | N/A                      | jax, jaxlib, flax, optax, numpyro |
+
+Notes:
+- The latest JAX wheels have CUDA 12.3 support and are backward compatible with CUDA 12.1+
+- For older CUDA versions, corresponding JAX wheels are used
+- ROCm support is also available, but is experimental
+- JAX no longer supports GPUs with Compute Capability < 5.2 (Maxwell or newer required)
+
 ## How do I install it?
 
 Since `light-the-jax` is not yet published on PyPI, you can install it directly from GitHub:
 
 ```shell
-pip install git+https://github.com/pmeier/light-the-jax.git
+pip install git+https://github.com/sbhavani/light-the-jax.git
 ```
 
 Since it depends on `pip` and it might be upgraded during installation,
@@ -53,7 +77,7 @@ Since it depends on `pip` and it might be upgraded during installation,
 install it with:
 
 ```shell
-py -m pip install git+https://github.com/pmeier/light-the-jax.git
+py -m pip install git+https://github.com/sbhavani/light-the-jax.git
 ```
 
 Once published to PyPI, installation will be as simple as:
@@ -144,9 +168,4 @@ The tool follows the same security practices as the original `light-the-torch`:
 ## How do I contribute?
 
 Thanks for your interest in contributing to `light-the-jax`! All contributions are
-appreciated, whether code or not. In a project like this, we rely on user
-reports for edge cases we didn't anticipate. Please feel free to
-open an issue if you encounter anything that you think should be working but doesn't.
-
-If you want to contribute code, check out our contributing guidelines to learn more 
-about the workflow.
+appreciated, whether code or not. 
