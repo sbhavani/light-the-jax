@@ -11,26 +11,25 @@ from pip._vendor.packaging.version import InvalidVersion, Version
 
 
 try:
-    import light_the_torch
+    import light_the_jax
 except ModuleNotFoundError:
-    light_the_torch = None
+    light_the_jax = None
 
 NOT_AVAILABLE = "N/A"
 
-# TODO: somehow merge this with light_the_torch._patch.PYTORCH_DISTRIBUTIONS to avoid
+# TODO: somehow merge this with light_the_jax._patch.JAX_DISTRIBUTIONS to avoid
 #  duplication
-PYTORCH_DISTRIBUTIONS = {
-    "torch",
-    "torch_model_archiver",
-    "torch_tb_profiler",
-    "torcharrow",
-    "torchaudio",
-    "torchcsprng",
-    "torchdata",
-    "torchdistx",
-    "torchserve",
-    "torchtext",
-    "torchvision",
+JAX_DISTRIBUTIONS = {
+    "jax",
+    "jaxlib",
+    "flax",
+    "optax",
+    "equinox",
+    "orbax",
+    "dm-haiku",
+    "numpyro",
+    "blackjax",
+    "diffrax",
 }
 
 
@@ -47,16 +46,16 @@ def main():
         [
             ("pip", pip.__version__),
             (
-                "light_the_torch",
-                light_the_torch.__version__ if light_the_torch else NOT_AVAILABLE,
+                "light_the_jax",
+                light_the_jax.__version__ if light_the_jax else NOT_AVAILABLE,
             ),
         ],
-        detect_pytorch_or_dependent_packages(),
+        detect_jax_or_dependent_packages(),
     ):
         print(f"- `{name}=={version}`")
 
 
-# TODO: somehow merge this with light_the_torch._cb._detect_nvidia_driver_version to
+# TODO: somehow merge this with light_the_jax._cb._detect_nvidia_driver_version to
 #  avoid duplication
 def detect_nvidia_driver_version():
     try:
@@ -75,12 +74,12 @@ def detect_nvidia_driver_version():
         return None
 
 
-def detect_pytorch_or_dependent_packages():
+def detect_jax_or_dependent_packages():
     packages = {
         (dist.name, dist.version)
         for dist in importlib_metadata.distributions()
         if any(
-            name in PYTORCH_DISTRIBUTIONS
+            name in JAX_DISTRIBUTIONS
             for name in itertools.chain(
                 [dist.name],
                 (
@@ -93,7 +92,7 @@ def detect_pytorch_or_dependent_packages():
     }
     return sorted(
         packages,
-        key=lambda package: (package[0] not in PYTORCH_DISTRIBUTIONS, package[0]),
+        key=lambda package: (package[0] not in JAX_DISTRIBUTIONS, package[0]),
     )
 
 

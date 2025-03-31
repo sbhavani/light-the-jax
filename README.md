@@ -1,7 +1,6 @@
 # `light-the-jax`
 
 [![BSD-3-Clause License](https://img.shields.io/github/license/pmeier/light-the-torch)](https://opensource.org/licenses/BSD-3-Clause)
-[![Project Status: WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 
 `light-the-jax` is a small utility that wraps `pip` to ease the installation process
 for JAX and related distributions like `jaxlib`, `flax`, `optax`, and more, as well
@@ -61,7 +60,6 @@ The table below shows the current CUDA version compatibility for JAX and related
 Notes:
 - The latest JAX wheels have CUDA 12.3 support and are backward compatible with CUDA 12.1+
 - For older CUDA versions, corresponding JAX wheels are used
-- ROCm support is also available, but is experimental
 - JAX no longer supports GPUs with Compute Capability < 5.2 (Maxwell or newer required)
 
 ## How do I install it?

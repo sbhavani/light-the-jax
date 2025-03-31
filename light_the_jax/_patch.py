@@ -382,7 +382,7 @@ def patch_link_collection(computation_backends, channel, user_supplied_pinned_pa
 def patch_candidate_selection(computation_backends):
     # Update pattern to recognize both JAX patterns
     computation_backend_link_pattern = re.compile(
-        r"/(?P<computation_backend>(cpu|cu\d+|rocm([\d.]+)|cuda\d+))/"
+        r"/(?P<computation_backend>(cpu|cu\d+|cuda\d+))/"
     )
     # JAX specific pattern for extract from wheel filename
     jax_cuda_pattern = re.compile(

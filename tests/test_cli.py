@@ -15,7 +15,7 @@ from light_the_jax._cli import main
 from light_the_jax._patch import Channel
 
 
-@pytest.mark.parametrize("cmd", ["ltt", "python -m light_the_torch"])
+@pytest.mark.parametrize("cmd", ["ltj", "python -m light_the_jax"])
 def test_entry_point_smoke(cmd):
     subprocess.run(shlex.split(cmd), shell=False)
 
@@ -81,7 +81,7 @@ def exits(*, should_succeed=True, expected_code=None, check_err=None, check_out=
 @pytest.fixture
 def set_argv(mocker):
     def patch(*options):
-        return mocker.patch.object(sys, "argv", ["ltt", *options])
+        return mocker.patch.object(sys, "argv", ["ltj", *options])
 
     return patch
 
@@ -101,26 +101,26 @@ def test_help_smoke(set_argv, option):
 def test_version(set_argv, option):
     set_argv(option)
 
-    with exits(check_out=f"ltt {ltj.__version__} from {ltj.__path__[0]}"):
+    with exits(check_out=f"ltj {ltj.__version__} from {ltj.__path__[0]}"):
         main()
 
 
 @pytest.mark.parametrize(
     "option",
     [
-        "--pytorch-computation-backend",
+        "--jax-computation-backend",
         "--cpuonly",
-        "--pytorch-channel",
+        "--jax-channel",
     ],
 )
-def test_ltt_options_smoke(set_argv, option):
+def test_ltj_options_smoke(set_argv, option):
     set_argv("install", "--help")
 
     with exits(check_out=option):
         main()
 
 
-def test_pytorch_channel_values(set_argv):
+def test_jax_channel_values(set_argv):
     set_argv("install", "--help")
 
     with exits(check_out=[f"'{channel.name.lower()}'" for channel in Channel]):

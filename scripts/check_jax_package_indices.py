@@ -5,32 +5,23 @@ import requests
 import tqdm
 from bs4 import BeautifulSoup
 
-from light_the_torch._cb import _MINIMUM_DRIVER_VERSIONS, CPUBackend, CUDABackend
-from light_the_torch._patch import (
+from light_the_jax._cb import _MINIMUM_DRIVER_VERSIONS, CPUBackend, CUDABackend
+from light_the_jax._patch import (
     Channel,
     get_index_urls,
-    PYTORCH_DISTRIBUTIONS,
+    JAX_DISTRIBUTIONS,
     THIRD_PARTY_PACKAGES,
 )
 
-EXCLUDED_PYTORCH_PACKAGES = {
-    "nestedtensor",
-    "pytorch_csprng",
-    "pytorch-triton-rocm",
-    "torch-cuda80",
-    "torch-nightly",
-    "torchaudio_nightly",
-    "torchrec",
-    "torchrec-cpu",
-    "torchrec_nightly",
-    "torchrec_nightly_3.7_cu11.whl",
-    "torchrec_nightly_3.8_cu11.whl",
-    "torchrec_nightly_3.9_cu11.whl",
-    "torchrec_nightly_cpu",
-    "torchtriton",
-    "triton",
+EXCLUDED_JAX_PACKAGES = {
+    # Add any JAX packages that should be excluded from the check
+    "jax-nightly",
+    "jaxlib-nightly",
+    "tensorflow-cpu",
+    "tensorflow-gpu",
+    "tensorflow-rocm",
 }
-HANDLED_PACKAGES = PYTORCH_DISTRIBUTIONS | THIRD_PARTY_PACKAGES
+HANDLED_PACKAGES = JAX_DISTRIBUTIONS | THIRD_PARTY_PACKAGES
 
 COMPUTATION_BACKENDS = {
     CUDABackend(cuda_version.major, cuda_version.minor)
@@ -58,7 +49,7 @@ def main():
         soup = BeautifulSoup(response.text, features="html.parser")
 
         available.update(tag.string for tag in soup.find_all(name="a"))
-    available = available - EXCLUDED_PYTORCH_PACKAGES
+    available = available - EXCLUDED_JAX_PACKAGES
 
     print(
         json.dumps(
