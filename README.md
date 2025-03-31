@@ -60,7 +60,7 @@ The table below shows the current CUDA version compatibility for JAX and related
 Notes:
 - The latest JAX wheels have CUDA 12.3 support and are backward compatible with CUDA 12.1+
 - For older CUDA versions, corresponding JAX wheels are used
-- JAX no longer supports GPUs with Compute Capability < 5.2 (Maxwell or newer required)
+- JAX no longer supports GPUs with Compute Capability < 5.2. Maxwell or newer is required and Turing or newer is recommended.
 
 ## How do I install it?
 
@@ -154,7 +154,7 @@ specific tasks.
 
 ## Is it safe?
 
-JAX is developed and maintained by Google, and its wheels are hosted on Google Cloud Storage,
+JAX is developed and maintained by Google and NVIDIA, and its wheels are hosted on Google Cloud Storage,
 which provides a secure distribution mechanism. `light-the-jax` does not modify this security
 model - it simply automates the process of finding and installing the correct wheels for your
 system.
@@ -165,5 +165,4 @@ The tool follows the same security practices as the original `light-the-torch`:
 
 ## How do I contribute?
 
-Thanks for your interest in contributing to `light-the-jax`! All contributions are
-appreciated, whether code or not. 
+All contributions are appreciated, whether code or not. 
